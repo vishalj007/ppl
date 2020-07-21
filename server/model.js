@@ -8,11 +8,7 @@ const pplSchema = mongoose.Schema({
 		unique: true,
 		index: true,
 	},
-	id: {
-		type: String,
-		unique: true,
-		index: true,
-	},
+	id: { type: String },
 	firstName: { type: String },
 	lastName: { type: String },
 	avatar: { type: String },

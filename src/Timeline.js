@@ -3,35 +3,27 @@ import Header from "./Components/Header";
 import Footer from "./Components/Footer";
 import axios from "axios";
 import { getUser, setUserSession, getToken } from "./Utils/Common";
-import { Posts } from "./Components/Posts";
+import Posts from "./Components/Posts";
+import { connect } from "react-redux";
 
 function Timeline(props) {
-	const [user, setUsr] = useState(getUser());
 	let token = getToken();
 
 	var formData;
 	const [uploadForm, setUploadForm] = useState(false);
-	const [title, setTitle] = useState();
-	const [category, setCategory] = useState();
-	const [imagepost, setImage] = useState();
 	const [editBtn, setEditBtn] = useState(false);
-	const [description, setDescription] = useState(user.description);
-	const [sex, setSex] = useState(user.sex);
 	const [CategoriesBtn, setCategoriesBtn] = useState(false);
-	const [Categories, setCategories] = useState();
-	const [categoryName, setCategoryName] = useState();
-	const [categoryClick, setCategoryClick] = useState();
-	const [elements, setElements] = useState();
 	const [change, setChange] = useState(Math.random());
 	const [t1, sett1] = useState();
-
+	const [elements, setElements] = useState();
 	/// for fetching posts data from server
 	useEffect(() => {
+		props.setTimeline("user", getUser());
+
 		axios
 			.post("http://localhost:8080/feed/gettimeline")
 			.then((response) => {
 				console.log("updates", response.data);
-
 				setElements(response.data.reverse());
 			})
 			.catch((err) => console.log(err));
@@ -41,30 +33,31 @@ function Timeline(props) {
 		axios
 			.post("http://localhost:8080/category/get")
 			.then((response) => {
-				setCategories(response.data);
+				props.setTimeline("categories", response.data.reverse());
 			})
 			.catch((err) => console.log(err));
-		console.log(user.id);
+		console.log(props.user.id);
 	}, [change]);
 
 	const uploadPost = (e) => {
 		e.preventDefault();
 		formData = new FormData();
-		formData.append("file", imagepost);
-		formData.append("email", user.Email);
-		formData.append("id", user.id);
-		formData.append("title", title);
-		formData.append("category", category);
-		formData.append("avatar", user.avatar);
-		formData.append("author", user.firstName + " " + user.lastName);
+		formData.append("file", props.imagepost);
+		formData.append("email", props.user.Email);
+		formData.append("id", props.user.id);
+		formData.append("title", props.title);
+		formData.append("category", props.category);
+		formData.append("avatar", props.user.avatar);
+		formData.append("author", props.user.firstName + " " + props.user.lastName);
 
 		const response = axios
 			.post("http://localhost:8080/feed/upload", formData)
 			.then((response) => {
 				console.log("inside upload post: ", response.data);
 				setUploadForm(false);
-				setTitle();
-				setCategory();
+				props.setTimeline("title", "");
+				props.setTimeline("category", "");
+				props.setTimeline("imagepost", "");
 				sett1(response.data);
 			})
 			.catch((err) => console.log(err));
@@ -82,16 +75,16 @@ function Timeline(props) {
 		e.preventDefault();
 		const resp = await axios
 			.post("http://localhost:8080/auth/editDetails", {
-				email: user.Email,
-				id: user.id,
-				description: description,
-				sex: sex,
+				email: props.user.Email,
+				id: props.user.id,
+				description: props.description,
+				sex: props.sex,
 			})
 			.then((response) => {
 				console.log(response.data);
 				setUserSession(token, response.data);
-				setUsr(getUser());
-				//window.location.reload(false);
+				props.setTimeline("user", getUser());
+
 				setEditBtn(false);
 			})
 			.catch((err) => console.log(err));
@@ -100,15 +93,15 @@ function Timeline(props) {
 	const changePic = (e) => {
 		e.preventDefault();
 		var formdetails = new FormData();
-		formdetails.append("email", user.Email);
-		formdetails.append("id", user.id);
+		formdetails.append("email", props.user.Email);
+		formdetails.append("id", props.user.id);
 		formdetails.append("avatar", e.target.files[0]);
 		console.log(e.target.files[0]);
 
 		axios
 			.post("http://localhost:8080/auth/changepic", formdetails)
 			.then((response) => {
-				setChange(Math.random());
+				sett1(Math.random());
 				console.log(response);
 			})
 			.catch((err) => console.log(err));
@@ -118,11 +111,11 @@ function Timeline(props) {
 		e.preventDefault();
 		axios
 			.post("http://localhost:8080/category/add", {
-				categoryName: categoryName,
+				categoryName: props.categoryName,
 			})
 			.then((response) => {
 				console.log(response.data);
-				setCategoryName("");
+				props.setTimeline("categoryName", "");
 				setChange(response.data);
 			})
 			.catch((err) => {
@@ -139,8 +132,8 @@ function Timeline(props) {
 				<input
 					type="text"
 					name="categoryName"
-					value={categoryName}
-					onChange={(e) => setCategoryName(e.target.value)}
+					value={props.categoryName}
+					onChange={(e) => props.setTimeline("categoryName", e.target.value)}
 					required
 				/>
 
@@ -195,12 +188,14 @@ function Timeline(props) {
 							</div>
 							<div className="rght_list">
 								<ul>
-									{Categories
-										? Categories.map((i, key) => (
+									{props.Categories
+										? props.Categories.map((i, key) => (
 												<li key={key}>
 													<a
 														href="#"
-														onClick={() => setCategoryClick(i.category)}
+														onClick={() =>
+															props.setTimeline("categoryClick", i.category)
+														}
 													>
 														<span className="list_icon"></span> {i.category}
 													</a>
@@ -209,7 +204,10 @@ function Timeline(props) {
 										: ""}
 									<li>
 										{" "}
-										<a href="#" onClick={() => setCategoryClick()}>
+										<a
+											href="#"
+											onClick={() => props.setTimeline("categoryClick", "")}
+										>
 											<span className="list_icon"></span> Show All
 										</a>
 									</li>
@@ -266,7 +264,9 @@ function Timeline(props) {
 								<div className="timeline_div1">
 									<div className="profile_pic">
 										<img
-											src={`http://localhost:8080${user.avatar}?${Date.now()}`}
+											src={`http://localhost:8080${
+												props.user.avatar
+											}?${Date.now()}`}
 										/>
 
 										<div className="profile_text">
@@ -299,22 +299,28 @@ function Timeline(props) {
 													<li>
 														<div className="div_name1">Name :</div>
 														<div className="div_name2">
-															{user.firstName + " " + user.lastName}
+															{props.user.firstName + " " + props.user.lastName}
 														</div>
 													</li>
 													<li>
 														<div className="div_name1">Sex :</div>
 														{editBtn ? (
 															<select
-																value={sex}
-																onChange={(e) => setSex(e.target.value)}
+																name="sex"
+																value={props.sex}
+																onChange={(e) =>
+																	props.setTimeline(
+																		e.target.name,
+																		e.target.value
+																	)
+																}
 															>
 																<option value="">Select</option>
 																<option value="Male">Male</option>
 																<option value="Female">Female</option>
 															</select>
 														) : (
-															<div className="div_name2">{user.sex}</div>
+															<div className="div_name2">{props.user.sex}</div>
 														)}
 													</li>
 													<li>
@@ -322,14 +328,18 @@ function Timeline(props) {
 														{editBtn ? (
 															<input
 																type="text"
-																value={description}
+																value={props.description}
+																name="description"
 																onChange={(e) => {
-																	setDescription(e.target.value);
+																	props.setTimeline(
+																		"description",
+																		e.target.value
+																	);
 																}}
 															/>
 														) : (
 															<div className="div_name3">
-																{user.description}
+																{props.user.description}
 															</div>
 														)}
 													</li>
@@ -382,16 +392,22 @@ function Timeline(props) {
 											<span>Post Title</span>
 											<input
 												type="text"
-												value={title}
-												onChange={(e) => setTitle(e.target.value)}
+												name="title"
+												value={props.title}
+												onChange={(e) =>
+													props.setTimeline(e.target.name, e.target.value)
+												}
 											/>
 											<span>Category</span>
 											<select
-												value={category}
-												onChange={(e) => setCategory(e.target.value)}
+												value={props.category}
+												name="category"
+												onChange={(e) =>
+													props.setTimeline(e.target.name, e.target.value)
+												}
 											>
 												<option value="">Select</option>
-												{Categories.map((i) => (
+												{props.Categories.map((i) => (
 													<option value={i.category}>{i.category}</option>
 												))}
 											</select>
@@ -399,8 +415,9 @@ function Timeline(props) {
 											<span>Upload Image</span>
 											<input
 												type="file"
+												name="ImagePost"
 												onChange={(e) => {
-													setImage(e.target.files[0]);
+													props.setTimeline("imagepost", e.target.files[0]);
 													console.log(e.target.files[0]);
 												}}
 											/>
@@ -418,9 +435,9 @@ function Timeline(props) {
 						<br />
 
 						{elements
-							? categoryClick
+							? props.categoryClick
 								? elements.map((i) =>
-										i.category === categoryClick ? (
+										i.category === props.categoryClick ? (
 											<li key={i.id}>
 												<Posts post={i} />
 											</li>
@@ -443,4 +460,29 @@ function Timeline(props) {
 		</div>
 	);
 }
-export default Timeline;
+
+const mapStateToProps = (state) => {
+	console.log("state", state);
+	return {
+		title: state.title,
+		category: state.category,
+		description: state.description,
+		sex: state.sex,
+		Categories: state.categories,
+		categoryClick: state.categoryClick,
+		categoryName: state.categoryName,
+
+		user: state.user,
+		imagepost: state.imagepost,
+	};
+};
+
+const mapDipatchToProps = (dispatch) => {
+	return {
+		setTimeline: (name, value) => {
+			dispatch({ type: "timeline", [name]: value, name: name });
+		},
+	};
+};
+
+export default connect(mapStateToProps, mapDipatchToProps)(Timeline);

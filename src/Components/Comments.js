@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { getUser } from "../Utils/Common";
+
 import axios from "axios";
+import { connect } from "react-redux";
 
-export default function Posts(props) {
+function Comments(props) {
 	const key = props.post;
-	const [reply, setReply] = useState(props.reply);
 	const [replyBtn, setReplyBtn] = useState(false);
-
-	const [comment, setComment] = useState();
-
-	const user = getUser();
+	const user = props.user;
+	useEffect(() => {
+		console.log("reply", props.reply);
+	}, [props.reply]);
 
 	const submitReply = (e) => {
 		e.preventDefault();
@@ -19,12 +19,13 @@ export default function Posts(props) {
 				commenton: key.id,
 				id: user.id,
 				commentor: user.firstName + " " + user.lastName,
-				comment: comment,
+				comment: props.commentreply,
 			})
 			.then((response) => {
 				console.log(response.data);
-				setComment("");
-				setReply(response.data.reply);
+				props.setComments("commentreply", "");
+				props.setComments("reply", response.data.reply);
+				setReplyBtn(false);
 			})
 			.catch((err) => {
 				console.log(err);
@@ -47,8 +48,8 @@ export default function Posts(props) {
 					<div className="image_name">{key.commentor}</div>
 				</div>
 				<div className="list_info">{key.comment}</div>
-				{reply
-					? reply.map((i) =>
+				{props.reply
+					? props.reply.map((i) =>
 							i.commenton === key.id ? (
 								<li>
 									<div className="list_image">
@@ -85,9 +86,12 @@ export default function Posts(props) {
 						<form onSubmit={(e) => submitReply(e)}>
 							<input
 								type="text"
-								value={comment}
+								name="commentreply"
+								value={props.commentreply}
 								style={{ color: "#000000" }}
-								onChange={(e) => setComment(e.target.value)}
+								onChange={(e) =>
+									props.setComments("commentreply", e.target.value)
+								}
 								className="cmnt_bx"
 								required
 							/>
@@ -105,3 +109,22 @@ export default function Posts(props) {
 		);
 	}
 }
+
+const mapStateToProps = (state) => {
+	console.log("state", state);
+	return {
+		reply: state.reply,
+		commentreply: state.commentreply,
+		user: state.user,
+	};
+};
+
+const mapDipatchToProps = (dispatch) => {
+	return {
+		setComments: (name, value) => {
+			dispatch({ type: "comments", [name]: value, name: name });
+		},
+	};
+};
+
+export default connect(mapStateToProps, mapDipatchToProps)(Comments);

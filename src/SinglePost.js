@@ -2,94 +2,63 @@ import React, { useEffect, useState } from "react";
 import Header from "./Components/Header";
 import Footer from "./Components/Footer";
 import axios from "axios";
-import { getUser } from "./Utils/Common";
 import Comments from "./Components/Comments";
+import { connect } from "react-redux";
+import {
+	likeUpdate,
+	likeRemove,
+	getDetails,
+	updateComment,
+} from "./reduxMiddleware/singlepost_middle";
 
 function SinglePost(props) {
-	var user = getUser();
-	const [detail, setDetail] = useState();
-	const [likes, setLikes] = useState();
-	const [comments, setComments] = useState();
-	const [commentCount, setCommentCount] = useState();
-	const [alreadyLiked, setAlreadyLiked] = useState(false);
+	var user = props.user;
 
 	useEffect(() => {
-		axios
-			.post("http://localhost:8080/feed/getdetails", {
-				id: props.match.params.id,
-			})
-			.then((response) => {
-				setDetail(response.data[0]);
-				console.log(response.data);
-				setCommentCount(
-					response.data[0].comment.length + response.data[0].reply.length
-				);
-
-				for (var key in response.data[0].likes) {
-					if (response.data[0].likes[key].id === user.id) {
-						setAlreadyLiked(true);
-						console.log("matched", response.data[0].likes[key].id, user.id);
-					} else {
-						setAlreadyLiked(false);
-						console.log(
-							"not matched",
-							response.data[0].likes[key].email,
-							user.Email
-						);
-					}
-				}
-			})
-			.catch((err) => console.log(err));
-	}, [likes]);
+		props.ongetDetail(props.match.params.id, user.id);
+	}, [props.alreadyLiked]);
 
 	const updateComment = (e) => {
 		e.preventDefault();
-		axios
+		const data = {
+			avatar: user.avatar,
+			id: props.match.params.id,
+			commentor: user.firstName + " " + user.lastName,
+			comment: props.comment,
+		};
+		props.onUpdateComment(data);
+		/* axios
 			.post("http://localhost:8080/comment/update", {
 				avatar: user.avatar,
 				id: props.match.params.id,
 				commentor: user.firstName + " " + user.lastName,
-				comment: comments,
+				comment: props.comment,
 			})
 			.then((response) => {
 				console.log(response.data);
-				setComments("");
-				setDetail(response.data);
+				props.setSignlePosts("comment", "");
+				props.setSignlePosts("detail", response.data);
 			})
-			.catch((err) => console.log(err));
+			.catch((err) => console.log(err)); */
 	};
 
 	const likeupdate = (e) => {
 		e.preventDefault();
-		axios
-			.post("http://localhost:8080/likes/update", {
-				email: user.Email,
-				userid: user.id,
-				id: props.match.params.id,
-			})
-			.then((response) => {
-				setDetail(response.data);
-				setAlreadyLiked(true);
-			})
-			.catch((err) => {
-				console.log(err);
-			});
+		const data = {
+			email: user.Email,
+			userid: user.id,
+			id: props.match.params.id,
+		};
+		props.onLikeUpdate(data);
 	};
 	const likeremove = (e) => {
 		e.preventDefault();
-		axios
-			.post("http://localhost:8080/likes/remove", {
-				email: user.Email,
-				userid: user.id,
-				id: props.match.params.id,
-			})
-			.then((response) => {
-				setLikes(response.data);
-				setAlreadyLiked(false);
-			})
-			.catch((err) => {
-				console.log(err);
-			});
+		const data = {
+			email: user.Email,
+			userid: user.id,
+			id: props.match.params.id,
+		};
+		props.onLikeRemove(data);
 	};
 	return (
 		<div>
@@ -100,39 +69,43 @@ function SinglePost(props) {
 					<div className="content">
 						<div className="contnt_2">
 							<div className="div_a">
-								<div className="div_title">{detail ? detail.title : ""}</div>
+								<div className="div_title">
+									{props.detail ? props.detail.title : ""}
+								</div>
 								<div className="btm_rgt">
-									<div className="btm_arc">{detail ? detail.category : ""}</div>
+									<div className="btm_arc">
+										{props.detail ? props.detail.category : ""}
+									</div>
 								</div>
 								<div className="div_top">
 									<div className="div_top_lft">
-										{detail ? (
+										{props.detail ? (
 											<img
 												style={{
 													width: "40px",
 													height: "40px",
 													borderRadius: "50%",
 												}}
-												src={`http://localhost:8080${detail.avatar}`}
+												src={`http://localhost:8080${props.detail.avatar}`}
 												alt="userpic"
 											/>
 										) : (
 											""
 										)}
-										{detail ? detail.author : ""}
+										{props.detail ? props.detail.author : ""}
 									</div>
 									<div className="div_top_rgt">
 										<span className="span_date">
-											{detail ? detail.date : ""}
+											{props.detail ? props.detail.date : ""}
 										</span>
 										<span className="span_time">
-											{detail ? detail.time : ""}
+											{props.detail ? props.detail.time : ""}
 										</span>
 									</div>
 								</div>
 								<div className="div_image">
-									{detail ? (
-										<img src={`http://localhost:8080/${detail.image}`} />
+									{props.detail ? (
+										<img src={`http://localhost:8080/${props.detail.image}`} />
 									) : (
 										""
 									)}
@@ -157,14 +130,14 @@ function SinglePost(props) {
 												</a>
 											</li>
 
-											{detail ? (
-												alreadyLiked ? (
+											{props.detail ? (
+												props.alreadyLiked ? (
 													<li>
 														<a href="#" onClick={(e) => likeremove(e)}>
 															<span className="btn_icon ">
 																<img src="/images/icon_003.png" alt="share" />
 															</span>
-															{detail.likes.length} Liked
+															{props.like} Liked
 														</a>
 													</li>
 												) : (
@@ -173,7 +146,7 @@ function SinglePost(props) {
 															<span className="btn_icon">
 																<img src="/images/icon_003.png" alt="share" />
 															</span>
-															{detail.likes.length} like
+															{props.like} like
 														</a>
 													</li>
 												)
@@ -186,7 +159,7 @@ function SinglePost(props) {
 													<span className="btn_icon">
 														<img src="/images/icon_004.png" alt="share" />
 													</span>
-													{commentCount} Comments
+													{props.commentCount} Comments
 												</a>
 											</li>
 										</ul>
@@ -196,9 +169,11 @@ function SinglePost(props) {
 						</div>
 						<div className="contnt_3">
 							<ul>
-								{detail
-									? detail.comment.map((key) => (
-											<Comments post={key} reply={detail.reply} />
+								{props.detail
+									? props.detail.comment.map((i, key) => (
+											<li key={key}>
+												<Comments post={i} />
+											</li>
 									  ))
 									: ""}
 								<li>
@@ -206,10 +181,10 @@ function SinglePost(props) {
 										<form onSubmit={(e) => updateComment(e)}>
 											<input
 												type="text"
-												value={comments}
+												value={props.comment}
 												style={{ color: "#000" }}
 												onChange={(e) => {
-													setComments(e.target.value);
+													props.setSignlePosts("comment", e.target.value);
 												}}
 												className="cmnt_bx1"
 												required
@@ -232,4 +207,37 @@ function SinglePost(props) {
 		</div>
 	);
 }
-export default SinglePost;
+
+const mapStateToProps = (state) => {
+	console.log("state", state);
+	return {
+		comment: state.comment,
+		detail: state.detail,
+		commentCount: state.commentCount,
+		alreadyLiked: state.alreadyLiked,
+		like: state.like,
+		user: state.user,
+	};
+};
+
+const mapDipatchToProps = (dispatch) => {
+	return {
+		setSignlePosts: (name, value) => {
+			dispatch({ type: "SinglePosts", [name]: value, name: name });
+		},
+		onLikeUpdate: (data) => {
+			dispatch(likeUpdate(data));
+		},
+		onLikeRemove: (data) => {
+			dispatch(likeRemove(data));
+		},
+		ongetDetail: (id, userid) => {
+			dispatch(getDetails(id, userid));
+		},
+		onUpdateComment: (data) => {
+			dispatch(updateComment(data));
+		},
+	};
+};
+
+export default connect(mapStateToProps, mapDipatchToProps)(SinglePost);

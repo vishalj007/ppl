@@ -1,21 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getUser } from "../Utils/Common";
 import Axios from "axios";
+import { connect } from "react-redux";
 
-export function Posts(props) {
-	const user = getUser();
-	const [i, setI] = useState(props.post);
+function Posts(props) {
+	const user = props.user;
 	const [like, setLikes] = useState(0);
 	const [alreadyLiked, setAlreadyLiked] = useState(false);
 
 	useEffect(() => {
+		setLikes(props.post.likes.length);
 		checkLike();
 	}, []);
 	const checkLike = () => {
 		console.log("Console Check Like", props.post);
 		for (var key in props.post.likes) {
-			setLikes(like + 1);
 			if (props.post.likes[key].id === user.id) {
 				setAlreadyLiked(true);
 			} else {
@@ -29,10 +28,9 @@ export function Posts(props) {
 		Axios.post("http://localhost:8080/likes/update", {
 			email: user.Email,
 			userid: user.id,
-			id: i.id,
+			id: props.post.id,
 		})
 			.then((response) => {
-				setI(response.data);
 				setLikes(response.data.likes.length);
 				setAlreadyLiked(true);
 			})
@@ -45,10 +43,10 @@ export function Posts(props) {
 		Axios.post("http://localhost:8080/likes/remove", {
 			email: user.Email,
 			userid: user.id,
-			id: i.id,
+			id: props.post.id,
 		})
 			.then((response) => {
-				setLikes(i.likes.length - 1);
+				setLikes(like - 1);
 				setAlreadyLiked(false);
 			})
 			.catch((err) => {
@@ -56,32 +54,35 @@ export function Posts(props) {
 			});
 	};
 
-	if (i.title === undefined) {
+	if (props.post.title === undefined) {
 		return "";
 	} else {
 		return (
 			<div className="contnt_2">
 				<div className="div_a">
-					<div className="div_title">{i.title}</div>
+					<div className="div_title">{props.post.title}</div>
 					<div className="btm_rgt">
-						<div className="btm_arc">{i.category}</div>
+						<div className="btm_arc">{props.post.category}</div>
 					</div>
 					<div className="div_top">
 						<div className="div_top_lft">
 							<img
 								style={{ width: "40px", height: "40px", borderRadius: "50%" }}
-								src={`http://localhost:8080${i.avatar}?${Date.now()}`}
+								src={`http://localhost:8080${props.post.avatar}?${Date.now()}`}
 							/>
-							{i.author}
+							{props.post.author}
 						</div>
 						<div className="div_top_rgt">
-							<span className="span_date">{i.date}</span>
-							<span className="span_time">{i.time}</span>
+							<span className="span_date">{props.post.date}</span>
+							<span className="span_time">{props.post.time}</span>
 						</div>
 					</div>
 					<div className="div_image">
-						<Link to={`/Singlepost/${i.id}`}>
-							<img src={`http://localhost:8080/${i.image}`} alt="pet" />
+						<Link to={`/Singlepost/${props.post.id}`}>
+							<img
+								src={`http://localhost:8080/${props.post.image}`}
+								alt="pet"
+							/>
 						</Link>
 					</div>
 					<div className="div_btm">
@@ -121,11 +122,12 @@ export function Posts(props) {
 									)}
 								</li>
 								<li>
-									<Link to={`/Singlepost/${i.id}`}>
+									<Link to={`/Singlepost/${props.post.id}`}>
 										<span className="btn_icon">
 											<img src="/images/icon_004.png" alt="share" />
 										</span>
-										{i.comment.length + i.reply.length} Comments
+										{props.post.comment.length + props.post.reply.length}{" "}
+										Comments
 									</Link>
 								</li>
 							</ul>
@@ -136,3 +138,18 @@ export function Posts(props) {
 		);
 	}
 }
+const mapStateToProps = (state) => {
+	return {
+		user: state.user,
+	};
+};
+
+const mapDipatchToProps = (dispatch) => {
+	return {
+		setPosts: (name, value) => {
+			dispatch({ type: "posts", [name]: value, name: name });
+		},
+	};
+};
+
+export default connect(mapStateToProps, mapDipatchToProps)(Posts);

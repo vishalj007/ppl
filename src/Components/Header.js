@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 import { removeUserSession, getUser } from "../Utils/Common";
 import { Link } from "react-router-dom";
+import { connect } from "react-redux";
 
 function Header(props) {
 	const logout = () => {
 		removeUserSession();
+		props.setlogout();
 	};
-	const user = getUser();
+
 	return (
 		<div>
 			<div className="navbar navbar-inverse navbar-fixed-top">
@@ -26,42 +28,46 @@ function Header(props) {
 						<a className="brand" href="#">
 							PPL
 						</a>
-						<div className="pro_info pull-right">
-							<div className="pro_icn">
-								<img src="/images/pic_small.png" />
+						{props.user ? (
+							<div className="pro_info pull-right">
+								<div className="pro_icn">
+									<img
+										style={{ borderRadius: "50%", marginTop: "-8px" }}
+										src={`http://localhost:8080${
+											props.user.avatar
+										}?${Date.now()}`}
+									/>
+								</div>
+								<div className="pro_txt">
+									Me
+									<b className="caret" />
+								</div>
+								<ul
+									className="dropdown-menu"
+									role="menu"
+									aria-labelledby="dLabel"
+								>
+									<li>
+										<Link to="/Login" onClick={logout}>
+											Logout
+										</Link>
+									</li>
+									<li>
+										<a tabIndex={-1} href="#">
+											Message Box
+										</a>
+									</li>
+									<li className="divider" />
+									<li>
+										<a tabIndex={-1} href="#">
+											<input type="text" placeholder="search" />
+										</a>
+									</li>
+								</ul>
 							</div>
-							<div className="pro_txt">
-								Me
-								<b className="caret" />
-							</div>
-							<ul
-								className="dropdown-menu"
-								role="menu"
-								aria-labelledby="dLabel"
-							>
-								<li>
-									<a tabIndex={-1} href="#">
-										My Profile
-									</a>
-								</li>
-								<li>
-									<a tabIndex={-1} href="#">
-										Message Box
-									</a>
-								</li>
-								<li>
-									<a tabIndex={-1} href="#">
-										Change Language
-									</a>
-								</li>
-								<li className="divider" />
-								<li>
-									<a tabIndex={-1} href="#">
-										<input type="text" placeholder="search" />
-									</a>
-								</li>
-							</ul>
-						</div>
+						) : (
+							""
+						)}
 						<div className="nav-collapse collapse">
 							<ul className="nav">
 								<li className="active">
@@ -128,10 +134,15 @@ function Header(props) {
 							<span className="msg_count">100</span>
 						</a>
 					</div>
-					{user ? (
+					{props.user ? (
 						<div className="pro_info pull-right">
 							<div className="pro_icn">
-								<img src="/images/pic_small.png" />
+								<img
+									style={{ borderRadius: "50%", marginTop: "-8px" }}
+									src={`http://localhost:8080${
+										props.user.avatar
+									}?${Date.now()}`}
+								/>
 							</div>
 							<div className="pro_txt">
 								Me
@@ -168,5 +179,18 @@ function Header(props) {
 		</div>
 	);
 }
+const mapStateToProps = (state) => {
+	return {
+		user: state.user,
+	};
+};
 
-export default Header;
+const mapDipatchToProps = (dispatch) => {
+	return {
+		setlogout: () => {
+			dispatch({ type: "logout" });
+		},
+	};
+};
+
+export default connect(mapStateToProps, mapDipatchToProps)(Header);

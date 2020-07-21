@@ -44,13 +44,6 @@ authRoutes.post("/register", async (req, res) => {
 });
 
 authRoutes.post("/login", async (req, res) => {
-	fs.rename(
-		"/public/profile/img_6.png",
-		`/public/profile/${13782}.jpg`,
-		function (err) {
-			if (err) console.log("ERROR: " + err);
-		}
-	);
 	let userLogin = await userapi.loginuser(req.body.Email).then((data) => {
 		if (data.length === 0) {
 			res.send("User not registered");

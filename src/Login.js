@@ -1,61 +1,48 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import Header from "./Components/Header";
 import Footer from "./Components/Footer";
 import HomeDescription from "./Components/HomeDescription";
 import { setUserSession } from "./Utils/Common";
+import { auth } from "./reduxMiddleware/auth";
+import { connect } from "react-redux";
 
 function Login(props) {
 	const [Email, setemail] = useState();
 	const [Password, setpassword] = useState();
-	const [Warning, setWarning] = useState();
 	const [EmailWarning, setemailWarning] = useState();
 	const [passWarning, setpassWarning] = useState(false);
 	const [EmailWarningBool, setemailWarningBool] = useState(false);
 	const [startp, setStartp] = useState(true);
 	const [starte, setStarte] = useState(true);
 
-	const login = () => {
-		if (
-			(passWarning && EmailWarningBool) ||
-			(Email === undefined && Password === undefined)
-		) {
+	const login = async () => {
+		if (EmailWarningBool || Email === undefined) {
 			setStarte(false);
-			setStartp(false);
 			setemailWarningBool(true);
 			setemailWarning("Please Enter correct email address");
-
-			setpassWarning(true);
-			alert("Please recheck your details again...!!!");
-		} else {
-			axios
-				.post("http://localhost:8080/auth/login", {
-					Email: Email,
-					Password: Password,
-				})
-				.then(function (response) {
-					if (
-						response.data === ("Wrong password....!!" || "User not registered")
-					) {
-						setWarning(response.data);
-					} else {
-						setUserSession(response.data.token, response.data.user);
-
-						setpassword(undefined);
-						setemail(undefined);
-						/* alert(response.data); */
-
-						props.history.push("/Timeline");
-					}
-				})
-				.catch(function (error) {
-					console.log(error);
-				});
 		}
-		console.log(Email, Password);
+		if (passWarning || Password === undefined) {
+			setStartp(false);
+			setpassWarning(true);
+		}
+
+		if (!passWarning && !EmailWarningBool) {
+			await props.onAuth(Email, Password);
+		}
 	};
+	useEffect(() => {
+		console.log("lsdalaksdoasjdoajdkjadsajda");
+		if (props.user && props.token) {
+			setUserSession(props.token, props.user);
+			console.log("props.user", props.user);
+			setpassword(undefined);
+			setemail(undefined);
+			props.history.push("/Timeline");
+		}
+	}, [props.token]);
 
 	const checkEmail = (e) => {
 		var check = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9,-_]+\.[a-zA-Z]{2,4}$/;
@@ -96,14 +83,14 @@ function Login(props) {
 						<div className="login_sec">
 							<h1>Log In</h1>
 							<ul>
-								<p style={{ color: "red" }}>{Warning}</p>
+								<p style={{ color: "red" }}>{props.Warning}</p>
 								<li>
 									<span>Email *</span>
 									<input
 										type="text"
 										placeholder="Enter your email"
 										style={{ color: "black" }}
-										value={Email}
+										value={Email || ""}
 										onChange={(e) => checkEmail(e)}
 									/>
 									{starte ? (
@@ -122,7 +109,7 @@ function Login(props) {
 										type="password"
 										placeholder="Enter your password"
 										style={{ color: "black" }}
-										value={Password}
+										value={Password || ""}
 										onChange={(e) => checkpass(e)}
 									/>
 									{startp ? (
@@ -140,8 +127,12 @@ function Login(props) {
 									Remember Me
 								</li>
 								<li>
-									<input type="submit" defaultValue="Log In" onClick={login} />
-									<a href>Forgot Password</a>
+									<input
+										type="submit"
+										defaultValue="Log In"
+										onClick={() => login()}
+									/>
+									<a href="#">Forgot Password</a>
 								</li>
 							</ul>
 							<div className="addtnal_acnt">
@@ -159,5 +150,18 @@ function Login(props) {
 		</div>
 	);
 }
+const mapStateToProps = (state) => {
+	return {
+		Warning: state.Warning,
+		token: state.token,
+		user: state.user,
+	};
+};
 
-export default Login;
+const mapDispatchToProps = (dispatch) => {
+	return {
+		onAuth: (email, password) => dispatch(auth(email, password)),
+	};
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(Login);
